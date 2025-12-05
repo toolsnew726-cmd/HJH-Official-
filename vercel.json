@@ -1,0 +1,17 @@
+{
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/:id([a-zA-Z0-9-]+)",
+      "destination": "/public/victim.html"
+    },
+    {
+      "source": "/",
+      "destination": "/public/index.html"
+    }
+  ]
+}
