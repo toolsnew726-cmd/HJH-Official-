@@ -1,7 +1,8 @@
 {
   "functions": {
     "api/**/*.js": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "memory": 1024
     }
   },
   "rewrites": [
@@ -11,18 +12,11 @@
     },
     {
       "source": "/([a-zA-Z0-9\\-_]+)",
-      "destination": "/public/victim.html",
-      "has": [
-        {
-          "type": "header",
-          "key": "accept",
-          "value": "text/html"
-        }
-      ]
+      "destination": "/victim.html"
     },
     {
       "source": "/",
-      "destination": "/public/index.html"
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -36,6 +30,10 @@
         {
           "key": "Access-Control-Allow-Methods",
           "value": "GET,POST,PUT,DELETE,OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, x-secret-key"
         }
       ]
     }
