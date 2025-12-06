@@ -1,3 +1,4 @@
+// api/create.js
 import { createClient } from '@supabase/supabase-js'
 import { customAlphabet } from 'nanoid'
 
@@ -19,112 +20,143 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
   
+  console.log('=== CREATE API CALLED ===')
+  
   try {
-    // Get request body
-    const body = await req.body
+    // Parse request body
+    let body
+    try {
+      body = req.body
+      console.log('Request body:', body)
+    } catch (e) {
+      console.error('Failed to parse body:', e)
+      return res.status(400).json({ error: 'Invalid request body' })
+    }
+    
     const { target, alias, mode = 'burst-5' } = body
     
-    console.log('Received request:', { target, alias, mode })
-    
-    // Validate
+    // Validation
     if (!target) {
-      return res.status(400).json({ 
-        error: 'Target URL is required' 
-      })
+      return res.status(400).json({ error: 'Target URL is required' })
     }
     
     if (!target.startsWith('http://') && !target.startsWith('https://')) {
-      return res.status(400).json({ 
-        error: 'URL must start with http:// or https://' 
-      })
+      return res.status(400).json({ error: 'URL must start with http:// or https://' })
     }
     
-    // Get Supabase credentials
+    // Environment variables
     const supabaseUrl = process.env.SUPABASE_URL
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY
     
-    console.log('Supabase URL exists:', !!supabaseUrl)
-    console.log('Supabase Key exists:', !!supabaseKey)
+    console.log('ENV Check - URL exists:', !!supabaseUrl)
+    console.log('ENV Check - Key exists:', !!supabaseKey)
     
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Missing Supabase environment variables')
+      console.error('Missing environment variables')
       return res.status(500).json({ 
-        error: 'Server configuration error' 
+        error: 'Server configuration error',
+        details: 'SUPABASE_URL or SUPABASE_SERVICE_KEY not set'
       })
     }
     
-    // Create Supabase client
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    // Create Supabase client with explicit options
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: false,
+        detectSessionInUrl: false
+      },
+      global: {
+        headers: {
+          'apikey': supabaseKey
+        }
+      }
+    })
     
-    // Generate ID and key
+    console.log('Supabase client created')
+    
+    // Generate IDs
     const nanoid = customAlphabet(alphabet, 10)
     const id = alias 
-      ? alias.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase()
+      ? alias.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase().substring(0, 50)
       : nanoid()
     
     const secretKey = nanoid(32)
     
     console.log('Generated ID:', id)
+    console.log('Target URL:', target)
     
-    // Check if ID exists
-    const { data: existing, error: checkError } = await supabase
-      .from('links')
-      .select('id')
-      .eq('id', id)
-      .maybeSingle()
+    // SIMPLIFIED: Direct insert without checking first
+    console.log('Attempting to insert into database...')
     
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Check error:', checkError)
-      return res.status(500).json({ 
-        error: 'Database error while checking existing ID' 
-      })
-    }
-    
-    if (existing) {
-      return res.status(400).json({ 
-        error: 'This alias/ID is already taken. Please try a different name.' 
-      })
-    }
-    
-    // Save to database
-    const { error: insertError } = await supabase
+    const { data, error } = await supabase
       .from('links')
       .insert({
-        id,
+        id: id,
         secret_key: secretKey,
         target_url: target,
         capture_mode: mode,
         alias: alias || null,
         created_at: new Date().toISOString()
       })
+      .select()
     
-    if (insertError) {
-      console.error('Database insert error:', insertError)
+    if (error) {
+      console.error('Database error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      })
+      
+      // Handle specific errors
+      if (error.code === '23505') { // Unique violation
+        return res.status(400).json({ 
+          error: 'This alias is already taken. Please use a different name.' 
+        })
+      }
+      
+      if (error.code === '42P01') { // Table doesn't exist
+        return res.status(500).json({ 
+          error: 'Database table not found',
+          solution: 'Please create the "links" table in Supabase'
+        })
+      }
+      
+      if (error.message.includes('JWT')) {
+        return res.status(500).json({ 
+          error: 'Authentication failed',
+          details: 'Invalid Supabase service key. Please check your credentials.'
+        })
+      }
+      
       return res.status(500).json({ 
-        error: 'Failed to save link to database',
-        details: insertError.message 
+        error: 'Database operation failed',
+        code: error.code,
+        message: error.message 
       })
     }
     
-    console.log('Link created successfully:', id)
+    console.log('Insert successful:', data)
     
     // Success response
     return res.status(200).json({
       success: true,
-      id,
+      id: id,
       key: secretKey,
-      target,
-      mode,
+      target: target,
+      mode: mode,
       link: `https://hjh-official.vercel.app/${id}`,
-      admin_link: `${id}:${secretKey}`,
+      backup_key: `${id}:${secretKey}`,
       message: '✅ Link created successfully!'
     })
     
   } catch (error) {
-    console.error('Server error:', error)
+    console.error('Unexpected error:', error)
     return res.status(500).json({ 
       error: 'Internal server error',
-      message: error.message 
+      message: error.message,
+      type: error.constructor.name
     })
   }
       }
