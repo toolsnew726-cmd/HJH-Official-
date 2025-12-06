@@ -1,14 +1,12 @@
 {
   "name": "hjh-prank-panel",
   "version": "1.0.0",
-  "scripts": {
-    "dev": "vercel dev"
+  "type": "module",
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.3",
-    "nanoid": "^5.0.0"
-  },
-  "devDependencies": {
-    "@vercel/node": "^3.0.0"
+    "@supabase/supabase-js": "^2.39.7",
+    "nanoid": "^5.0.7"
   }
 }
