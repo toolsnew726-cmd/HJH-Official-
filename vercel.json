@@ -6,16 +6,23 @@
   },
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/public/index.html"
-    },
-    {
-      "source": "/:id([a-zA-Z0-9-]+)",
-      "destination": "/public/victim.html"
-    },
-    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
+    },
+    {
+      "source": "/([a-zA-Z0-9\\-_]+)",
+      "destination": "/public/victim.html",
+      "has": [
+        {
+          "type": "header",
+          "key": "accept",
+          "value": "text/html"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "destination": "/public/index.html"
     }
   ],
   "headers": [
